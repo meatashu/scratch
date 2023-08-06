@@ -43,6 +43,7 @@ def generate_developer_profile(username):
         "jira_issues": issues,
         "bitbucket_commits": commits,
         "commits_per_jira": {},
+        "time_between_first_and_last_commit": {},
     }
 
     for issue in issues:
@@ -54,6 +55,11 @@ def generate_developer_profile(username):
         if jira_number:
             for jira in jira_number:
                 profile["commits_per_jira"].setdefault(jira, []).append(commit)
+
+                first_commit = profile["commits_per_jira"][jira][0]
+                last_commit = profile["commits_per_jira"][jira][-1]
+                time_between_commits = (last_commit["updatedDate"] - first_commit["updatedDate"]).total_seconds()
+                profile["time_between_first_and_last_commit"].setdefault(jira, time_between_commits)
 
     return profile
 
