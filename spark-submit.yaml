@@ -1,0 +1,225 @@
+openapi: 3.0.0
+info:
+  title: Spark Submit API
+  description: An API to submit Spark jobs and get feedback on past job runs.
+  version: 1.0.0
+paths:
+  /submit:
+    post:
+      operationId: submitSparkJob
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Job'
+      responses:
+        200:
+          description: The Spark job submitted successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobRequest'
+  /jobs:
+    post:
+      operationId: getJobs
+      responses:
+        200:
+          description: A list of Spark jobs that have been submitted in the past.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobsResponse'
+  /jobs/{jobId}/status:
+    post:
+      operationId: getJobStatus
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            description: The ID of the Spark job.
+      responses:
+        200:
+          description: The status of the Spark job.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobsStatusResponse'
+  /jobs/{jobId}/cancel:
+    post:
+      operationId: cancelJob
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            description: The ID of the Spark job.
+      responses:
+        200:
+          description: The Spark job was canceled successfully.
+  /jobs/{jobId}/result/{stageId}:
+    post:
+      operationId: getJobResult
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            description: The ID of the Spark job.
+        - name: stageId
+          in: path
+          required: true
+          schema:
+            type: string
+            description: Whether to include the results of all intermediary DAG stages in the response.
+      responses:
+        200:
+          description: The result of the Spark job.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: string
+                    description: The result of the Spark job.
+                  intermediaryStages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        stageId:
+                          type: string
+                          description: The ID of the DAG stage.
+                        result:
+                          type: string
+                          description: The result of the DAG stage.
+
+components:
+  schemas:
+    JobRequest:
+      type: object
+      properties:
+        jobId:
+          type: string
+          description: The ID of the Spark job.
+        success:
+          type: boolean
+          description: Whether the request was successful.
+        status:
+          type: string
+          description: The status of the Spark job.
+          oneOf:
+            - enum:
+              - RUNNING
+              - FINISHED
+              - CANCELLED
+        message:
+          type: string
+          description: A message describing the result of the request.
+    Job:
+      type: object
+      properties:
+        command:
+          type: string
+          description: The ID of the Spark job.
+        workflow:
+          $ref: '#/components/schemas/Workflow'
+        status:
+          type: string
+          description: The status of the Spark job.
+          oneOf:
+            - enum:
+              - RUNNING
+              - FINISHED
+              - CANCELLED
+    JobsStatusResponse:
+      allOf:
+        - $ref: '#/components/schemas/JobRequest'
+        - properties:
+            status:
+              type: string
+              description: The status of the Spark job.
+              oneOf:
+                - enum:
+                  - RUNNING
+                  - FINISHED
+                  - CANCELLED
+    JobsResponse:
+      allOf:
+        - $ref: '#/components/schemas/JobRequest'
+        - properties:
+            jobs:
+              type: array
+              items:
+                $ref: '#/components/schemas/Job'
+    StageResult:
+      type: object
+      properties:
+        headers:
+          type: array
+          items:
+            type: string
+        rows:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+    Workflow:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the workflow.
+        components:
+          type: array
+          items:
+            $ref: '#/components/schemas/Component'
+    KeyValuePairs:
+      type: array
+      items:
+        type: object
+        properties:
+          key:
+            type: string
+            description: The key of the key value pair.
+          value:
+            type: string
+            description: The value of the key value pair.
+    Component:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the component.
+        className:
+          type: string
+          description: The fully qualified class name of the component.
+        arguments:
+          $ref: '#/components/schemas/KeyValuePairs'
+    DataFrameResult:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              rowID:
+                type: string
+                description: The row ID of the data point.
+              values:
+                type: array
+                items:
+                  type: string
+                  description: The value of the data point.
+        columns:
+          type: array
+          items:
+            type: string
+            description: The name of the column.
