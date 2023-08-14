@@ -50,6 +50,7 @@ public class SparkSubmit {
         Process process = Runtime.getRuntime().exec(sparkSubmitCommand);
         process.waitFor();
 
+
         // Check the exit code
         int exitCode = process.exitValue();
         if (exitCode != 0) {
@@ -57,6 +58,55 @@ public class SparkSubmit {
         } else {
             System.out.println("Spark submit succeeded");
         }
+
+        // Get the spark application id and status
+        String sparkApplicationId = getSparkApplicationId(process.getInputStream());
+        String sparkApplicationStatus = getSparkApplicationStatus(process.getInputStream());
+
+        // Print the spark application id and status
+        System.out.println("Spark application id: " + sparkApplicationId);
+        System.out.println("Spark application status: " + sparkApplicationStatus);
+
+                // Check the spark application status every 60 seconds
+        while (!sparkApplicationStatus.equals("FINISHED")) {
+            Thread.sleep(60000);
+            sparkApplicationStatus = getSparkApplicationStatus(process.getInputStream());
+        }
+
+        // Print the spark application status
+        System.out.println("Spark application status: " + sparkApplicationStatus);
+    }
+
+    private static String getSparkApplicationId(InputStream inputStream) throws IOException {
+        String sparkApplicationId = "";
+        String line;
+        while ((line = readLine(inputStream)) != null) {
+            if (line.contains("Spark application ID: ")) {
+                sparkApplicationId = line.split(" ")[2];
+                break;
+            }
+        }
+        return sparkApplicationId;
+    }
+
+    private static String getSparkApplicationStatus(InputStream inputStream) throws IOException {
+        String sparkApplicationStatus = "";
+        String line;
+        while ((line = readLine(inputStream)) != null) {
+            if (line.contains("Spark application status: ")) {
+                sparkApplicationStatus = line.split(" ")[2];
+                break;
+            }
+        }
+        return sparkApplicationStatus;
+    }
+
+    private static String readLine(InputStream inputStream) throws IOException {
+        byte[] bytes = new byte[1024];
+        int read = inputStream.read(bytes);
+        if (read == -1) {
+            return null;
+        }
+        return new String(bytes, 0, read);
     }
 }
-
