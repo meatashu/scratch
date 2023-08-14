@@ -57,10 +57,13 @@ def assert_hql_correct(hql):
 
   return check_query
 
-if __name__ == "__main__":
-  script = read_sql_script("test.sql")
-  assertions = generate_assertions(script)
-  for assertion in assertions:
-    assertion()
+def main():
+  directory = "/path/to/directory"
+  for filename in os.listdir(directory):
+    if filename.endswith(".hql"):
+      script = read_sql_script(os.path.join(directory, filename))
+      assertions = generate_assertions(script)
+      for assertion in assertions:
+        assertion()
 
   print("All assertions passed!")
